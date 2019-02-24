@@ -1,0 +1,89 @@
+165.246.41.45
+
+1. Flashing HypriotOS in SD card  for rpi
+ID : pirate
+pwd : hypriot
+
+2. connect the remote pc and test docker program
+2-(1) get the root access
+CMD
+$ sudo passwd root	(passward make)
+$ su			(root login)
+all setting the pwd is "iesl"
+
+2-(2) change the hostname
+$ vi /etc/hostname	(open hostname configure file and rewrite)
+
+2-(3) wireless lan using
+$ vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+(enter the following syntax at the top)
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+
+network={
+	ssid = "iesl"
+	psk = "iesliesl"
+}
+
+2-(4) set the static IP(DHCP) in router and port forwarding
+
+2-(5) check docker
+-> docker info
+
+1~2. is same process with master node and worker node
+
+* 깔아야하는 프로그램
+kubeadm: the command to bootstrap the cluster(클러스터의 부트스트랩 명령)
+
+kubelet: the component that runs on all of the machines in your cluster and does things like starting pods and containers.(클러스터의 모든 시스템에서 실행되는 구성 요소이며 시작 pods 및 컨테이너와 같은 작업을 수행)
+
+kubectl: the command line util to talk to your cluster(클러스터와 대화하기 위한 명령행 유틸리티)
+
+apt-get update && apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+apt-get update
+apt-get install -y kubelet kubeadm kubectl
+apt-mark hold kubelet kubeadm kubectl
+
+3-1. setting the for master node
+
+$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+
+3-2. master node initialized
+
+$ kubeadm init --pod-network-cidr 10.244.0.0/16 --ignore-preflight-errors --apiserver-advertise-address=165.246.41.45
+
+3-3. we get the token then, all worker node set the token
+
+$ kubeadm join <master-ip>:<master-port> --token <token> --discovery-token-ca-cert-hash sha256:<hash>
+
+this cmd is getting kubernetes admin account
+$ export KUBECONFIG=/etc/kubernetes/admin.conf
+
+3-4. set the flannel
+$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/a70459be0084506e4ec919aa1c114638878db11b/Documentation/kube-flannel.yml
+
+3-5. dashboard 
+$ kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+kubectl apply -f kubernetes-dashboard.yaml
+
+$ https://165.246.41.45:6443/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+
+4. setting the tensorflow
+(1) 출처 : https://hub.docker.com/r/romilly/rpi-docker-tensorflow
+
+docker run -it -p 8888:8888 -v ~/myNotebooks:/notebooks/myNotebooks romilly/rpi-docker-tensorflow
+
+For using the browser in same wireless lan
+http://192.168.1.4:8888/tree#notebooks
+
+or
+
+docker pull tensorflow/tensorflow:1.13.0rc2-py3-jupyter
+
+(2) simple network display,  
